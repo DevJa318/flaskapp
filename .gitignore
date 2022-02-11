@@ -1,0 +1,9 @@
+
+
+# FOLDERY
+**/.ipynb_checkpoints/
+dist/
+vsearch.egg-info/
+
+# PLIKI
+vsearch.log
