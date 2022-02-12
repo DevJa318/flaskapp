@@ -1,11 +1,12 @@
-from flask import Flask,render_template,request #redirect
+from flask import Flask,render_template,request,escape #redirect
 from vsearch import search4letters
 
 app=Flask(__name__)
 
 def log_request(req: 'flask_request', res:str) -> None:
     with open('vsearch.log', 'a') as log:
-        print(res, req, file = log)
+        print(req.form, req.remote_addr, res, req.user_agent, file=log, sep='|')
+        
 """
 @app.route('/')
 def hello() -> '302':
@@ -31,6 +32,22 @@ def do_search() -> 'html':
 def entry_page() -> 'html':
     return render_template('entry.html', the_title="Witamy na stronie internetowej Search")
 
+
+@app.route('/viewlog')
+def viewlogpage() -> 'html':
+    contents = []
+    with open('vsearch.log') as log:
+        for line in log:
+            contents.append([])
+            for item in line.split('|'):
+                contents[-1].append(escape(item))
+                
+        titles = ['Dane wyszukiwania','Adres','Wyniki','Przeglądarka']
+        return render_template('viewlog.html',
+                               the_title ="Takie są logi:",
+                               the_row_titles = titles,
+                               the_data = contents
+                              )
 
 if __name__ == '__main__':
     app.run(debug=True)
