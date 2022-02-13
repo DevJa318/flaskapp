@@ -55,13 +55,6 @@ def viewlogpage() -> 'html':
                 from log"""
         cursor.execute(_SQL)
         contents = cursor.fetchall()
-        
-
-    with open('vsearch.log') as log:
-        for line in log:
-            contents.append([])
-            for item in line.split('|'):
-                contents[-1].append(escape(item))
                 
         titles = ['Fraza','Litery','Adres','Przeglądarka','Wyniki']
         
