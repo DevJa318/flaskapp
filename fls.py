@@ -1,36 +1,30 @@
 from flask import Flask,render_template,request,escape #redirect
 from vsearch import search4letters
 
-import mariadb
+from DBcm import UseDatabase
 
 app=Flask(__name__)
 
+app.config['dbconfig'] = {'host':'127.0.0.1',
+        'user':'vsearch',
+        'password':'vsearchpasswd',
+        'database':'vsearchlogDB',}
+
+
 def log_request(req: 'flask_request', res:str) -> None:
     
-    dbconfig = {'host':'127.0.0.1',
-            'user':'vsearch',
-            'password':'vsearchpasswd',
-            'database':'vsearchlogDB'}
+    with UseDatabase(app.config['dbconfig']) as cursor:
+        _SQL = """insert into log
+        (phrase,letters, ip, browser_string, results)
+        values
+        (%s, %s, %s, %s, %s)"""
     
-    conn = mariadb.connect(**dbconfig)
-    cursor = conn.cursor()
-    
-    _SQL = """insert into log
-    (phrase,letters, ip, browser_string, results)
-    values
-    (%s, %s, %s, %s, %s)"""
-    
-    cursor.execute(_SQL,(req.form['phrase'],
-                        req.form['letters'],
-                        req.remote_addr,
-                        req.user_agent.browser,
-                        res,
-                        ))
-    
-    conn.commit()
-    
-    cursor.close()
-    conn.close()
+        cursor.execute(_SQL,(req.form['phrase'],
+                            req.form['letters'],
+                            req.remote_addr,
+                            req.user_agent.browser,
+                            res,
+                            ))
 
 @app.route('/search4', methods=['POST'])
 def do_search() -> 'html':
@@ -54,17 +48,27 @@ def entry_page() -> 'html':
 @app.route('/viewlog')
 def viewlogpage() -> 'html':
     contents = []
+    
+    
+    with UseDatabase(app.config['dbconfig']) as cursor:
+        _SQL = """select phrase, letters, ip, browser_string, results
+                from log"""
+        cursor.execute(_SQL)
+        contents = cursor.fetchall()
+        
+
     with open('vsearch.log') as log:
         for line in log:
             contents.append([])
             for item in line.split('|'):
                 contents[-1].append(escape(item))
                 
-        titles = ['Dane wyszukiwania','Adres','Wyniki','Przeglądarka']
+        titles = ['Fraza','Litery','Adres','Przeglądarka','Wyniki']
+        
         return render_template('viewlog.html',
                                the_title ="Takie są logi:",
                                the_row_titles = titles,
-                               the_data = contents
+                               the_data = contents,
                               )
 
 if __name__ == '__main__':
